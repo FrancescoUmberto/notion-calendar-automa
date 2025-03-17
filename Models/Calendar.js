@@ -8,18 +8,13 @@ class Calendar {
   }
   async getCalendar(databaseId) {
     try {
-      let calendar = await calendarModel.findOne({ databaseId });
+      let calendar = await calendarModel
+        .findOne({ databaseId })
+        .populate("events");
       if (calendar) {
-        // Convert plain objects back to proper types
-        calendar.events = new Map(
-          Object.entries(calendar.events).map(([key, value]) => [
-            key,
-            new Event(value),
-          ])
-        );
         return calendar;
       } else {
-        const newCalendar = new calendarModel({ databaseId });
+        const newCalendar = new calendarModel({ databaseId, events: [] });
         await newCalendar.save();
         return newCalendar;
       }
@@ -40,7 +35,7 @@ class Calendar {
 
 const calendarSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
-  events: { type: Map, of: eventSchema, default: new Map() },
+  events: [{ type: mongoose.Schema.Types.ObjectId, ref: "Event" }],
 });
 
 const calendarModel = mongoose.model("Calendar", calendarSchema);

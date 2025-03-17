@@ -1,6 +1,5 @@
 require("dotenv").config();
 const router = require("express").Router();
-const fs = require("fs");
 const { google } = require("googleapis");
 const { getUserByEmail, addUser } = require("../Database/user.db");
 
@@ -57,6 +56,9 @@ router.get("/redirect", (req, res) => {
             if (!user) {
               addUser(email, token, process.env.NOTION_DATABASE_ID);
             }
+            // always update the token
+            user.token = JSON.stringify(token);
+            user.save();
           });
 
           // Send the response with both the token and email

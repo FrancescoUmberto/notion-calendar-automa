@@ -59,10 +59,27 @@ router.post("/add_calendar", async (req, res) => {
     }
 
     const user = await getUserByEmail(email);
-    if (!user) return res.status(404).send("User not found");   
+    if (!user) return res.status(404).send("User not found");
     const state = await addCalendar(email, notion_database_id);
     return res.send(state);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
 
+router.get("/events", async (req, res) => {
+  try {
+    const email = req.query.email;
+    if (!email) return res.status(400).send("Missing email parameter");
+    const user = await getUserByEmail(email);
+    if (!user) return res.status(404).send("User not found");
+
+    const calendar = new Calendar();
+    const calendarData = await calendar.getCalendar(user.calendarId);
+    const notionUtils = new NotionUtils(calendarData);
+    const events = await notionUtils.fetchEvents();
+    res.send(events);
   } catch (error) {
     console.error(error);
     res.status(500).send("Internal Server Error");

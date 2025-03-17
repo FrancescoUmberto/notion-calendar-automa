@@ -1,5 +1,6 @@
 const calendarModel = require("../Models/Calendar").calendarModel;
 const userModel = require("../Models/User").userModel;
+const eventModel = require("../Models/Event").eventModel;
 
 async function getCalendarByID(id) {
   try {
@@ -28,7 +29,44 @@ async function addCalendar(email, notion_database_id) {
   }
 }
 
+async function addEventToCalendar(calendar, event) {
+  try {
+    const eventDoc = new eventModel(event);
+    await eventDoc.save();
+
+    if (!Array.isArray(calendar.events)) {
+      calendar.events = [];
+    }
+
+    calendar.events.push(eventDoc._id);
+    await calendar.save();
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+async function updateEventInCalendar(event) {
+  try {
+    const updatedEvent = await eventModel.findOneAndUpdate(
+      { id: event.id },
+      event,
+      { new: true, overwrite: true }
+    );
+
+    if (!updatedEvent) {
+      console.error("Event not found in database");
+      return;
+    }
+
+    console.log("Event updated successfully:", updatedEvent);
+  } catch (err) {
+    console.log(err);
+  }
+}
+
 module.exports = {
   getCalendarByID,
   addCalendar,
+  addEventToCalendar,
+  updateEventInCalendar,
 };

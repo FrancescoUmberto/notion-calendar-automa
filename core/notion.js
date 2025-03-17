@@ -1,17 +1,20 @@
 require("dotenv").config();
 const { Client } = require("@notionhq/client");
 const Event = require("../Models/Event").Event;
+const addEventToCalendar =
+  require("../Database/calendar.db").addEventToCalendar;
+const updateEventInCalendar =
+  require("../Database/calendar.db").updateEventInCalendar;
 
 const scheduledEvents = new Map();
 class NotionUtils {
   constructor(calendar) {
-    this.notion = new Client({ auth: process.env.NOTION_API_KEY }); // doesn't change
+    this.notion = new Client({ auth: process.env.NOTION_API_KEY });
     this.notion_database_id = calendar.id;
     this.lastChecked = new Date().toISOString();
-    this.eventsList =
-      calendar.events instanceof Map
-        ? calendar.events
-        : new Map(calendar.events);
+    this.eventsList = new Map(
+      calendar.events.map((event) => [event.id, event])
+    );
     this.calendar = calendar;
   }
 
@@ -36,10 +39,8 @@ class NotionUtils {
 
   eventFilter(events, lastCheckedTruncated) {
     let newEvents = events.filter((event) => {
-      return (
-        event.last_edited_time >= lastCheckedTruncated &&
-        !this.eventsList.has(event.id)
-      );
+      // console.log(`${event.last_edited_time} >= ${lastCheckedTruncated}`)
+      return event.last_edited_time >= lastCheckedTruncated;
     });
 
     newEvents.forEach((event) => {
@@ -53,13 +54,14 @@ class NotionUtils {
   async getNotionEvents() {
     try {
       const events = await this.fetchEvents();
-
       const lastCheckedTruncated = Event.truncateToMinutes(
         new Date(this.lastChecked)
       );
-      const newEvents = await this.eventFilter(events, lastCheckedTruncated);
+      let newEvents = [];
+      newEvents = await this.eventFilter(events, lastCheckedTruncated);
       if (newEvents.length > 0) {
         newEvents.forEach((event) => {
+          console.log(event.id);
           if (scheduledEvents.has(event.id)) {
             console.log(
               `✅ Event ${event.id} found in scheduledEvents, resetting counter`
@@ -68,39 +70,57 @@ class NotionUtils {
               ...scheduledEvents.get(event.id),
               no_update_counter: 0,
             });
+          } else if (this.eventsList.has(event.id)) {
+            console.log(
+              `🔼 Event ${event.id} found in eventsList, adding to scheduledEvents`
+            );
+            scheduledEvents.set(event.id, {
+              event: event,
+              calendar: this.calendar.id,
+              no_update_counter: 0,
+              update: true,
+            });
           } else {
             console.log(`➕ Adding new event ${event.id} to scheduledEvents`);
             scheduledEvents.set(event.id, {
               event: event,
               calendar: this.calendar.id,
               no_update_counter: 0,
+              update: false,
             });
           }
         });
+      } else {
+        scheduledEvents.forEach((value, key) => {
+          if (!newEvents.some((event) => event.id === key)) {
+            console.log(
+              `🔼 Event ${key} not found in newEvents, increasing counter`
+            );
+            scheduledEvents.set(key, {
+              ...value,
+              no_update_counter: value.no_update_counter + 1,
+            });
+          }
+        });
+
+        scheduledEvents.forEach((value, key) => {
+          if (value.no_update_counter === 1) {
+            console.log(
+              `🚀 Event ${key} published and removed from scheduledEvents`
+            );
+            value.event.published_time = new Date().toISOString();
+            if (value.update === true) {
+              // update the event in the database
+              value.event.state = "PUBLISHED";
+              updateEventInCalendar(value.event);
+            } else {
+              value.event.state = "PUBLISHED";
+              addEventToCalendar(this.calendar, value.event);
+            }
+            scheduledEvents.delete(key);
+          }
+        });
       }
-
-      scheduledEvents.forEach((value, key) => {
-        if (!newEvents.some((event) => event.id === key)) {
-          console.log(
-            `🔼 Event ${key} not found in newEvents, increasing counter`
-          );
-          scheduledEvents.set(key, {
-            ...value,
-            no_update_counter: value.no_update_counter + 1,
-          });
-        }
-      });
-
-      scheduledEvents.forEach((value, key) => {
-        if (value.no_update_counter === 3) {
-          console.log(
-            `🚀 Event ${key} published and removed from scheduledEvents`
-          );
-          value.event.state = "PUBLISHED";
-          scheduledEvents.delete(key);
-        }
-      });
-
       console.log("📌 Scheduled events after update:", scheduledEvents);
 
       this.lastChecked = new Date().toISOString();

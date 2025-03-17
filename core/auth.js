@@ -8,7 +8,6 @@ class auth {
       "https://www.googleapis.com/auth/calendar",
       "https://www.googleapis.com/auth/userinfo.email",
     ];
-    this.TOKEN_PATH = "./tokens/token.json";
     this.oauth2Client = new google.auth.OAuth2(
       GOOGLE_CLIENT_ID,
       GOOGLE_SECRET_ID,
@@ -17,17 +16,10 @@ class auth {
   }
 
   // Function to authenticate with Google Calendar API
-  authorizeGoogleAPI() {
+  authorizeGoogleAPI(token) {
     return new Promise((resolve, reject) => {
-      // Check if there's a saved token
-      fs.readFile(this.TOKEN_PATH, (err, token) => {
-        if (err) {
-          console.log(err);
-        } else {
-          this.oauth2Client.setCredentials(JSON.parse(token));
-          resolve(this.oauth2Client);
-        }
-      });
+      this.oauth2Client.setCredentials(JSON.parse(token));
+      resolve(this.oauth2Client);
     });
   }
   // Function to get the access token from the authorization code

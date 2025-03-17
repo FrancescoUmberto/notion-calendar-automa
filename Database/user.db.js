@@ -1,4 +1,5 @@
 const userModel = require("../Models/User").userModel;
+const calendarModel = require("../Models/Calendar").calendarModel;
 
 async function getUserByEmail(email) {
   try {
@@ -9,12 +10,21 @@ async function getUserByEmail(email) {
   }
 }
 
-async function addUser(user, token) {
+async function addUser(user, token, notion_database_id) {
   try {
+    let calendar = await calendarModel.findOne({ id: notion_database_id });
+
+    if (!calendar) {
+      calendar = new calendarModel({ id: notion_database_id });
+      await calendar.save();
+    }
+
     const newUser = new userModel({
       email: user,
-      token: JSON.stringify(token),
+      calendar: notion_database_id,
+      token: JSON.stringify(token)
     });
+
     await newUser.save();
   } catch (error) {
     console.log(error);

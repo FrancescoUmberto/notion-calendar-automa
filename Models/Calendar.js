@@ -6,6 +6,36 @@ class Calendar {
     this.id = id;
     this.events = new Map();
   }
+  async getCalendar(databaseId) {
+    try {
+      let calendar = await calendarModel.findOne({ databaseId });
+      if (calendar) {
+        // Convert plain objects back to proper types
+        calendar.events = new Map(
+          Object.entries(calendar.events).map(([key, value]) => [
+            key,
+            new Event(value),
+          ])
+        );
+        return calendar;
+      } else {
+        const newCalendar = new calendarModel({ databaseId });
+        await newCalendar.save();
+        return newCalendar;
+      }
+    } catch (error) {
+      console.error("Error in getCalendar:", error);
+    }
+  }
+
+  async saveEvent(calendar, event) {
+    try {
+      calendar.events.set(event.id, event);
+      await calendar.save();
+    } catch (error) {
+      console.error("Error in saveEvent:", error);
+    }
+  }
 }
 
 const calendarSchema = new mongoose.Schema({

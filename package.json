@@ -4,13 +4,14 @@
   "main": "index.js",
   "scripts": {
     "test": "node ./core/calendar.endpoints.js",
-    "start": "node index.js"
+    "start": "nodemon index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@notionhq/client": "^2.3.0",
     "axios": "^1.8.3",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
@@ -18,6 +19,7 @@
     "googleapis": "^146.0.0",
     "json": "^11.0.0",
     "mongoose": "^8.12.1",
+    "nodemon": "^3.1.9",
     "notion-client": "^7.1.6",
     "open": "^10.1.0"
   }

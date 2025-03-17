@@ -3,14 +3,16 @@ const mongoose = require("mongoose");
 class Event {
   constructor(
     id,
-    google_calendar_id,
+    calendar_id,
+    calendar_event_id,
     state,
     title,
     type,
     color,
     start,
     end,
-    last_edited_time
+    last_edited_time,
+    published_time
   ) {
     if (!Object.values(EventState).includes(state)) {
       throw new Error(`Invalid state: ${state}`);
@@ -20,7 +22,8 @@ class Event {
       throw new Error(`Invalid color: ${color}`);
     }
     this.id = id;
-    this.google_calendar_id = google_calendar_id;
+    this.calendar_id = calendar_id;
+    this.calendar_event_id = calendar_event_id;
     this.state = state;
     this.title = title;
     this.type = type;
@@ -28,6 +31,7 @@ class Event {
     this.start = start;
     this.end = end;
     this.last_edited_time = last_edited_time;
+    this.published_time = published_time;
   }
 }
 const EventState = Object.freeze({
@@ -56,6 +60,7 @@ const eventSchema = new mongoose.Schema({
   start: { type: Date, required: false },
   end: { type: Date, required: false },
   last_edited_time: { type: Date, required: true },
+  published_time: { type: Date, required: false },
 });
 
 const eventModel = mongoose.model("Event", eventSchema);

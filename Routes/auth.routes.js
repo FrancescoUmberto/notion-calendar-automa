@@ -55,23 +55,13 @@ router.get("/redirect", (req, res) => {
 
           getUserByEmail(email).then((user) => {
             if (!user) {
-              addUser(email, token);
+              addUser(email, token, process.env.NOTION_DATABASE_ID);
             }
           });
 
           // Send the response with both the token and email
           JSON.stringify(user, null, 2);
           res.send(user);
-
-          // Save the token inside a JSON file
-          fs.writeFile("tokens/token.json", JSON.stringify(token), (err) => {
-            if (err) {
-              console.error("Error saving token", err);
-              res.send("Error");
-              return;
-            }
-            console.log("Token saved");
-          });
         });
       })
       .catch((error) => {

@@ -40,6 +40,8 @@ async function addEventToCalendar(calendar, event) {
 
     calendar.events.push(eventDoc._id);
     await calendar.save();
+
+    return { state: "success", message: "Event added successfully" };
   } catch (err) {
     console.log(err);
   }
@@ -57,7 +59,7 @@ async function updateEventInCalendar(event) {
       console.error("Event not found in database");
       return;
     }
-    
+
     return { state: "success", message: "Event updated successfully" };
   } catch (err) {
     console.log(err);

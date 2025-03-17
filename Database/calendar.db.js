@@ -57,8 +57,8 @@ async function updateEventInCalendar(event) {
       console.error("Event not found in database");
       return;
     }
-
-    console.log("Event updated successfully:", updatedEvent);
+    
+    return { state: "success", message: "Event updated successfully" };
   } catch (err) {
     console.log(err);
   }

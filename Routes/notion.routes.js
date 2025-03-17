@@ -19,7 +19,12 @@ router.get("/scan", async (req, res) => {
 
     // If the user is already being scanned, return an error
     if (activeScans.has(email)) {
-      return res.send("User already being scanned in background.");
+      return res.status(500).send({
+        state: "error",
+        message: "User is already being scanned",
+        email: email,
+        scan_interval: process.env.SCAN_INTERVAL / 1000 + " seconds",
+      });
     }
 
     // Start the background scan
@@ -34,7 +39,6 @@ router.get("/scan", async (req, res) => {
         // console.log(calendarData);
         const notionUtils = new NotionUtils(calendarData);
         await notionUtils.getNotionEvents(calendarData);
-        console.log(`Scanning calendar for user: ${email}`);
       } catch (error) {
         console.error(`Error scanning calendar for ${email}:`, error);
       }
@@ -42,7 +46,12 @@ router.get("/scan", async (req, res) => {
 
     activeScans.set(email, interval);
 
-    res.send("User found, authorized, and scanning started.");
+    res.status(200).send({
+      state: "success",
+      message: "Background scan started",
+      email: email,
+      scan_interval: process.env.SCAN_INTERVAL / 1000 + " seconds",
+    });
   } catch (error) {
     console.error(error);
     res.status(500).send("Internal Server Error");

@@ -112,7 +112,8 @@ class NotionUtils {
             if (value.update === true) {
               // update the event in the database
               value.event.state = "PUBLISHED";
-              updateEventInCalendar(value.event);
+              state = updateEventInCalendar(value.event);
+              return state;
             } else {
               value.event.state = "PUBLISHED";
               addEventToCalendar(this.calendar, value.event);

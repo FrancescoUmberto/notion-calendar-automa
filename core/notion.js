@@ -2,10 +2,11 @@ require("dotenv").config();
 const { Client } = require("@notionhq/client");
 const Event = require("../Models/Event").Event;
 
+const scheduledEvents = new Map();
 class NotionUtils {
   constructor(calendar) {
-    this.notion = new Client({ auth: process.env.NOTION_API_KEY });
-    this.notion_database_id = calendar.calendar;
+    this.notion = new Client({ auth: process.env.NOTION_API_KEY }); // doesn't change
+    this.notion_database_id = calendar.id;
     this.lastChecked = new Date().toISOString();
     this.eventsList =
       calendar.events instanceof Map
@@ -17,10 +18,14 @@ class NotionUtils {
   async fetchEvents() {
     try {
       const response = await this.notion.databases.query({
-        database_id: this.databaseId,
+        database_id: this.notion_database_id,
       });
+      if (!response.results) {
+        console.error("❌ No events found in Notion database");
+        return [];
+      }
       const events = response.results.map((page) => {
-        return Event.fromNotionPage(page);
+        return Event.fromNotionPage(this.notion_database_id, page);
       });
       return events;
     } catch (error) {
@@ -48,22 +53,56 @@ class NotionUtils {
   async getNotionEvents() {
     try {
       const events = await this.fetchEvents();
-      // Truncate the lastChecked timestamp to minutes for comparison
+
       const lastCheckedTruncated = Event.truncateToMinutes(
         new Date(this.lastChecked)
       );
-      // TODO add also the possibility to edit an existing event
-
-      // Filter new events: created after lastChecked and not already added
-      const newEvents = this.eventFilter(events, lastCheckedTruncated);
+      const newEvents = await this.eventFilter(events, lastCheckedTruncated);
       if (newEvents.length > 0) {
-        console.log("New events: ", newEvents);
         newEvents.forEach((event) => {
-          this.calendar.saveEvent(this.calendar, event);
+          if (scheduledEvents.has(event.id)) {
+            console.log(
+              `✅ Event ${event.id} found in scheduledEvents, resetting counter`
+            );
+            scheduledEvents.set(event.id, {
+              ...scheduledEvents.get(event.id),
+              no_update_counter: 0,
+            });
+          } else {
+            console.log(`➕ Adding new event ${event.id} to scheduledEvents`);
+            scheduledEvents.set(event.id, {
+              event: event,
+              calendar: this.calendar.id,
+              no_update_counter: 0,
+            });
+          }
         });
       }
 
-      // Update the lastChecked timestamp
+      scheduledEvents.forEach((value, key) => {
+        if (!newEvents.some((event) => event.id === key)) {
+          console.log(
+            `🔼 Event ${key} not found in newEvents, increasing counter`
+          );
+          scheduledEvents.set(key, {
+            ...value,
+            no_update_counter: value.no_update_counter + 1,
+          });
+        }
+      });
+
+      scheduledEvents.forEach((value, key) => {
+        if (value.no_update_counter === 3) {
+          console.log(
+            `🚀 Event ${key} published and removed from scheduledEvents`
+          );
+          value.event.state = "PUBLISHED";
+          scheduledEvents.delete(key);
+        }
+      });
+
+      console.log("📌 Scheduled events after update:", scheduledEvents);
+
       this.lastChecked = new Date().toISOString();
 
       return newEvents;

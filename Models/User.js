@@ -11,7 +11,7 @@ class User {
 
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
-  calendar: { type: String, required: true },
+  calendar: { type: String, required: false },
   token: { type: Object, required: true }
 });
 

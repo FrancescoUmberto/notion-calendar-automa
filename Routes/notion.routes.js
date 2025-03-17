@@ -1,17 +1,16 @@
 require("dotenv").config();
 const router = require("express").Router();
 const getUserByEmail = require("../Database/user.db").getUserByEmail;
+const addCalendar = require("../Database/calendar.db").addCalendar;
 const Auth = require("../core/auth");
 const NotionUtils = require("../core/notion");
 const Calendar = require("../Models/Calendar").Calendar;
 
 const auth = new Auth();
-const activeScans = new Map(); // Mappa per tenere traccia dei processi attivi
+const activeScans = new Map();
 
-// create a route to start the listening process over the notion database
 router.get("/scan", async (req, res) => {
   try {
-    // take the query parameter (that should be an email)
     const email = req.query.email;
     if (!email) return res.status(400).send("Missing email parameter");
     const user = await getUserByEmail(email);
@@ -25,20 +24,21 @@ router.get("/scan", async (req, res) => {
 
     // Start the background scan
     console.log(`Starting background scan for user: ${email}`);
-    const databaseId = user.calendarId;
+    const notion_database_id = user.calendarId;
 
     const calendar = new Calendar();
 
     const interval = setInterval(async () => {
       try {
-        const calendarData = await calendar.getCalendar(databaseId);
+        const calendarData = await calendar.getCalendar(notion_database_id);
+        // console.log(calendarData);
         const notionUtils = new NotionUtils(calendarData);
         await notionUtils.getNotionEvents(calendarData);
         console.log(`Scanning calendar for user: ${email}`);
       } catch (error) {
         console.error(`Error scanning calendar for ${email}:`, error);
       }
-    }, process.env.SCAN_INTERVAL); // Default a 10 sec se SCAN_INTERVAL non è definito
+    }, process.env.SCAN_INTERVAL);
 
     activeScans.set(email, interval);
 
@@ -49,14 +49,24 @@ router.get("/scan", async (req, res) => {
   }
 });
 
+router.post("/add_calendar", async (req, res) => {
+  try {
+    const email = req.body.email;
+    const notion_database_id = req.body.notion_database_id;
+
+    if (!email || !notion_database_id) {
+      return res.status(400).send("Missing email or notion_database_id");
+    }
+
+    const user = await getUserByEmail(email);
+    if (!user) return res.status(404).send("User not found");   
+    const state = await addCalendar(email, notion_database_id);
+    return res.send(state);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
 module.exports = router;
-// check if the email (and so the user) exists in the db
-// getUserByEmail(email).then((user) => {
-//     if (user) {
-//       auth.authorizeGoogleAPI(user.token).then(() => {
-//         res.send("User found and authorized");
-//       });
-//     } else {
-//       res.send("User not found");
-//     }
-//   });

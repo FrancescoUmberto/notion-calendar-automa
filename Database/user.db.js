@@ -12,16 +12,16 @@ async function getUserByEmail(email) {
 
 async function addUser(user, token, notion_database_id) {
   try {
-    let calendar = await calendarModel.findOne({ id: notion_database_id });
+  //   let calendar = await calendarModel.findOne({ id: notion_database_id });
 
-    if (!calendar) {
-      calendar = new calendarModel({ id: notion_database_id });
-      await calendar.save();
-    }
+  //   if (!calendar) {
+  //     calendar = new calendarModel({ id: notion_database_id });
+  //     await calendar.save();
+  //   }
 
     const newUser = new userModel({
       email: user,
-      calendar: notion_database_id,
+      calendar: null,
       token: JSON.stringify(token)
     });
 

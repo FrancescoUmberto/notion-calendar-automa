@@ -12,10 +12,12 @@ app.use("/", authRouter);
 app.use("/notion", notionRouter);
 
 connectToDatabase(() => {
-  app.listen(3000, () => {
+  app.listen(process.env.PORT, () => {
     const status = {
-      database: "connected",
       server: "running",
+      url: `http://${process.env.HOST}:${process.env.PORT}`,
+      database: "connected",
+
     };
     console.log(status);
   });

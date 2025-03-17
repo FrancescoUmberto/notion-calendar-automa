@@ -1,4 +1,5 @@
 const calendarModel = require("../Models/Calendar").calendarModel;
+const userModel = require("../Models/User").userModel;
 
 async function getCalendarByID(id) {
   try {
@@ -9,12 +10,21 @@ async function getCalendarByID(id) {
   }
 }
 
-async function addCalendar(calendarID) {
+async function addCalendar(email, notion_database_id) {
   try {
-    const newCalendar = new calendarModel(calendarID);
+    const newCalendar = new calendarModel({ id: notion_database_id });
     await newCalendar.save();
+
+    const user = await userModel.findOne({ email: email });
+    if (!user) return "User not found";
+
+    user.calendar = newCalendar.id;
+    await user.save();
+
+    return { state: "success", message: "Calendar added successfully" };
   } catch (err) {
     console.log(err);
+    return { state: "error", message: err };
   }
 }
 

@@ -19,7 +19,7 @@ async function addCalendar(email, notion_database_id) {
     const user = await userModel.findOne({ email: email });
     if (!user) return "User not found";
 
-    user.calendar = newCalendar.id;
+    user.calendar = newCalendar._id;
     await user.save();
 
     return { state: "success", message: "Calendar added successfully" };
@@ -66,9 +66,19 @@ async function updateEventInCalendar(event) {
   }
 }
 
+async function getCalendars() {
+  try {
+    const calendars = await calendarModel.find();
+    return calendars;
+  } catch (err) {
+    console.log(err);
+  }
+}
+
 module.exports = {
   getCalendarByID,
   addCalendar,
   addEventToCalendar,
   updateEventInCalendar,
+  getCalendars
 };

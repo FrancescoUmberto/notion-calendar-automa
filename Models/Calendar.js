@@ -6,17 +6,18 @@ class Calendar {
     this.id = id;
     this.events = new Map();
   }
-  async getCalendar(databaseId) {
+  async getCalendar(_id) {
     try {
       let calendar = await calendarModel
-        .findOne({ databaseId })
+        .findOne({ _id })
         .populate("events");
       if (calendar) {
         return calendar;
       } else {
-        const newCalendar = new calendarModel({ databaseId, events: [] });
-        await newCalendar.save();
-        return newCalendar;
+        // const newCalendar = new calendarModel({ _id, events: [] });
+        // await newCalendar.save();
+        // return newCalendar;
+        return null;
       }
     } catch (error) {
       console.error("Error in getCalendar:", error);

@@ -13,8 +13,11 @@ async function addUser(user, token) {
   try {
     const newUser = new userModel({
       email: user,
+      notion_database: null,
+      google_calendar: null,
+      scan: false,
       calendar: null,
-      token: JSON.stringify(token)
+      token: JSON.stringify(token),
     });
 
     await newUser.save();
@@ -23,4 +26,13 @@ async function addUser(user, token) {
   }
 }
 
-module.exports = { getUserByEmail, addUser };
+async function getUsers() {
+  try {
+    const users = await userModel.find();
+    return users;
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+module.exports = { getUserByEmail, addUser, getUsers };

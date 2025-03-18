@@ -7,48 +7,46 @@ const NotionUtils = require("../core/notion");
 const Calendar = require("../Models/Calendar").Calendar;
 
 const auth = new Auth();
-const activeScans = new Map();
 
-router.get("/scan", async (req, res) => {
+router.post("/scan", async (req, res) => {
   try {
-    const email = req.query.email;
-    if (!email) return res.status(400).send("Missing email parameter");
-    const user = await getUserByEmail(email);
-    if (!user) return res.status(404).send("User not found");
-    await auth.authorizeGoogleAPI(user.token);
-
-    // If the user is already being scanned, return an error
-    if (activeScans.has(email)) {
-      return res.status(500).send({
+    const email = req.body.email;
+    const scan_state = req.body.scan_state;
+    if (!email)
+      return res.status(400).send({
         state: "error",
-        message: "User is already being scanned",
-        email: email,
-        scan_interval: process.env.SCAN_INTERVAL / 1000 + " seconds",
+        message: "Missing email parameter",
       });
-    }
+    if (!scan_state == null)
+      return res.status(400).send({
+        state: "error",
+        message: "Missing scan_state parameter",
+      });
+    const user = await getUserByEmail(email);
+    if (!user)
+      return res.status(404).send({
+        state: "error",
+        message: "User not found",
+        email: email,
+      });
+    if (!user.calendar)
+      return res.status(400).send({
+        state: "error",
+        message: "User has not added a calendar yet",
+        email: email,
+      });
+    user.scan = scan_state;
+    user.save();
+    await auth.authorizeGoogleAPI(user.token);
 
     // Start the background scan
     console.log(`Starting background scan for user: ${email}`);
-    const notion_database_id = user.calendarId;
-
-    const calendar = new Calendar();
-
-    const interval = setInterval(async () => {
-      try {
-        const calendarData = await calendar.getCalendar(notion_database_id);
-        // console.log(calendarData);
-        const notionUtils = new NotionUtils(calendarData);
-        await notionUtils.getNotionEvents(calendarData);
-      } catch (error) {
-        console.error(`Error scanning calendar for ${email}:`, error);
-      }
-    }, process.env.SCAN_INTERVAL);
-
-    activeScans.set(email, interval);
 
     res.status(200).send({
       state: "success",
-      message: "Background scan started",
+      message: scan_state
+        ? "Scan has started successfully"
+        : "Scan has stopped successfully",
       email: email,
       scan_interval: process.env.SCAN_INTERVAL / 1000 + " seconds",
     });
@@ -62,18 +60,49 @@ router.post("/add_calendar", async (req, res) => {
   try {
     const email = req.body.email;
     const notion_database_id = req.body.notion_database_id;
+    const google_calendar_id = req.body.google_calendar_id;
 
-    if (!email || !notion_database_id) {
-      return res.status(400).send("Missing email or notion_database_id");
+    if (!email || !notion_database_id || !google_calendar_id) {
+      return res.status(400).send({
+        state: "error",
+        message: "Missing parameters",
+        email: email || "missing",
+        notion_database_id: notion_database_id || "missing",
+        google_calendar_id: google_calendar_id || "missing",
+      });
     }
 
     const user = await getUserByEmail(email);
-    if (!user) return res.status(404).send("User not found");
-    const state = await addCalendar(email, notion_database_id);
-    return res.send(state);
+    if (!user)
+      return res.status(404).send({
+        state: "error",
+        message: "User not found",
+        email: email,
+      });
+
+    if (!user.calendar) {
+      user.notion_database = notion_database_id;
+      user.google_calendar = google_calendar_id;
+      user.save();
+      const state = await addCalendar(
+        email,
+        notion_database_id,
+        google_calendar_id
+      );
+      return res.send(state);
+    } else {
+      return res.status(400).send({
+        state: "error",
+        message: "User already has a calendar",
+        email: email,
+      });
+    }
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    res.status(500).send({
+      state: "error",
+      message: "Internal Server Error",
+    });
   }
 });
 

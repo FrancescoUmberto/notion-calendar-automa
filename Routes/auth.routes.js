@@ -1,7 +1,8 @@
 require("dotenv").config();
 const router = require("express").Router();
 const { google } = require("googleapis");
-const { getUserByEmail, addUser } = require("../Database/user.db");
+const { getUserByEmail, addUser, getUsers } = require("../Database/user.db");
+const getCalendars = require("../Database/calendar.db").getCalendars;
 
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
@@ -22,14 +23,14 @@ router.get("/", (req, res) => {
 
 router.get("/redirect", (req, res) => {
   const code = req.query.code;
-  oauth2Client.getToken(code, (err, token) => {
+  oauth2Client.getToken(code, (err, access_token) => {
     if (err) {
       console.error("Error retrieving access token", err);
       res.send("Error");
       return;
     }
 
-    oauth2Client.setCredentials(token);
+    oauth2Client.setCredentials(access_token);
 
     // Get the user info after setting credentials
     oauth2Client
@@ -48,17 +49,19 @@ router.get("/redirect", (req, res) => {
 
           // Create the user object containing both the token and the email
           const user = {
-            token: token,
+            token: access_token,
             user: email,
           };
 
           getUserByEmail(email).then((user) => {
             if (!user) {
-              addUser(email, token, process.env.NOTION_DATABASE_ID);
+              addUser(email, access_token, null, null, false);
             }
             // always update the token
-            user.token = JSON.stringify(token);
-            user.save();
+            if (access_token && user) {
+              user.token = JSON.stringify(access_token);
+              user.save();
+            }
           });
 
           // Send the response with both the token and email
@@ -108,5 +111,29 @@ router.get("/events", (req, res) => {
     }
   );
 });
+
+router.get("/users", async (req, res) => {
+  try {
+    const users = await getUsers();
+    res.json(users);
+  } catch (error) {
+    console.error("Error retrieving users", error);
+    res.send("Error");
+  }
+});
+
+router.get("/all_calendars", async(req, res) => {
+  try {
+    const calendars = await getCalendars();
+    // populate the events
+    for (let calendar of calendars) {
+      await calendar.populate("events");
+    }
+    res.json(calendars);
+  } catch (error) {
+    console.error("Error retrieving calendars", error);
+    res.status(500).send("Internal server error");
+  }
+})
 
 module.exports = router;

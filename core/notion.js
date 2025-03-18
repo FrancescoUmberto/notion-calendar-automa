@@ -1,5 +1,4 @@
 require("dotenv").config();
-const { Client } = require("@notionhq/client");
 const Event = require("../Models/Event").Event;
 const addEventToCalendar =
   require("../Database/calendar.db").addEventToCalendar;
@@ -9,14 +8,15 @@ const updateEventInCalendar =
 const scheduledEvents = new Map();
 let state = {};
 class NotionUtils {
-  constructor(calendar) {
-    this.notion = new Client({ auth: process.env.NOTION_API_KEY });
+  constructor(notion, calendar, email) {
+    this.notion = notion;
     this.notion_database_id = calendar.id;
     this.lastChecked = new Date().toISOString();
     this.eventsList = new Map(
       calendar.events.map((event) => [event.id, event])
     );
     this.calendar = calendar;
+    this.email = email;
   }
 
   async fetchEvents() {
@@ -77,6 +77,7 @@ class NotionUtils {
           if (scheduledEvents.has(event.id)) {
             state = {
               state: "success",
+              user: this.email,
               message: `Event ${event.id} found in scheduledEvents`,
               action: "reset",
             };
@@ -88,6 +89,7 @@ class NotionUtils {
           } else if (this.eventsList.has(event.id)) {
             state = {
               state: "success",
+              user: this.email,
               message: `Event ${event.id} found in eventsList`,
               action: "update",
             };
@@ -101,6 +103,7 @@ class NotionUtils {
           } else {
             state = {
               state: "success",
+              user: this.email,
               message: `Event ${event.id} not found in eventsList`,
               action: "add to scheduledEvents",
             };
@@ -118,6 +121,7 @@ class NotionUtils {
           if (!newEvents.some((event) => event.id === key)) {
             state = {
               state: "success",
+              user: this.email,
               message: `Event ${key} not found in newEvents`,
               action: "increment no_update_counter",
             };
@@ -133,6 +137,7 @@ class NotionUtils {
           if (value.no_update_counter === 1) {
             state = {
               state: "success",
+              user: this.email,
               message: `Event ${key} has no updates for 1 cycle`,
               action: "publish and remove from scheduledEvents",
             };
@@ -140,11 +145,11 @@ class NotionUtils {
             value.event.published_time = new Date().toISOString();
             if (value.update === true) {
               // update the event in the database
-              value.event.state = "PUBLISHED";
+              value.event.state = "PUBLISHING";
               state = updateEventInCalendar(value.event);
               console.log(state);
             } else {
-              value.event.state = "PUBLISHED";
+              value.event.state = "PUBLISHING";
               state = addEventToCalendar(this.calendar, value.event);
               console.log(state);
             }
@@ -154,8 +159,9 @@ class NotionUtils {
       }
       state = {
         state: "success",
-        message: "Scheduled events after update",
-        scheduledEvents: scheduledEvents,
+        user: this.email,
+        message: "Scheduled events",
+        scheduledEvents: newEvents.map((event) => event.title)
       };
       console.log(state);
 
@@ -166,7 +172,7 @@ class NotionUtils {
       state = {
         state: "error",
         message: error,
-      }
+      };
       console.error(state);
       return [];
     }

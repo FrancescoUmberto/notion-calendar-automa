@@ -72,6 +72,7 @@ class Event {
 }
 const EventState = Object.freeze({
   PENDING: "PENDING",
+  PUBLISHING: "PUBLISHING",
   PUBLISHED: "PUBLISHED",
   INCOMPLETE: "INCOMPLETE",
 });

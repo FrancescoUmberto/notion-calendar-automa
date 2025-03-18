@@ -1,0 +1,4 @@
+Timestamp: 2025-03-18T13:11:49.704Z
+Error: querySrv ECONNREFUSED _mongodb._tcp.calendar-events.ejzrt.mongodb.net
+Stack: Error: querySrv ECONNREFUSED _mongodb._tcp.calendar-events.ejzrt.mongodb.net
+    at QueryReqWrap.onresolve [as oncomplete] (node:internal/dns/promises:293:17)

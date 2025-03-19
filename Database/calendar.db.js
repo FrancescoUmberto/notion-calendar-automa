@@ -31,6 +31,7 @@ async function addCalendar(email, notion_database_id) {
 
 async function addEventToCalendar(calendar, event) {
   try {
+    console.log(event);
     const eventDoc = new eventModel(event);
     await eventDoc.save();
 

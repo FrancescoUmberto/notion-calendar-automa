@@ -29,7 +29,6 @@ router.get("/redirect", (req, res) => {
       res.send("Error");
       return;
     }
-
     oauth2Client.setCredentials(access_token);
 
     // Get the user info after setting credentials

@@ -4,6 +4,7 @@ class Event {
   constructor(
     id,
     notion_database_id,
+    google_calendar_id,
     calendar_event_id,
     state,
     title,
@@ -23,6 +24,7 @@ class Event {
     }
     this.id = id;
     this.notion_database_id = notion_database_id;
+    this.google_calendar_id = google_calendar_id;
     this.calendar_event_id = calendar_event_id;
     this.state = state;
     this.title = title;
@@ -46,6 +48,7 @@ class Event {
     return new Event(
       page.id,
       notion_database_id,
+      null,
       null,
       EventState.PENDING,
       page.properties.Name?.title?.[0]?.plain_text,
@@ -93,6 +96,7 @@ const eventSchema = new mongoose.Schema({
   id: { type: String, required: true },
   notion_database_id: { type: String, required: true },
   google_calendar_id: { type: String, required: false },
+  calendar_event_id: { type: String, required: false },
   state: { type: String, required: true },
   title: { type: String, required: true },
   start: { type: Date, required: false },

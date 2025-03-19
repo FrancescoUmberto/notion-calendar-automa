@@ -1,22 +1,25 @@
 require("dotenv").config();
 const Event = require("../Models/Event").Event;
-const addEventToCalendar =
-  require("../Database/calendar.db").addEventToCalendar;
-const updateEventInCalendar =
-  require("../Database/calendar.db").updateEventInCalendar;
-
+const {
+  addEventToCalendar,
+  updateEventInCalendar,
+} = require("../Database/calendar.db");
+const { addEventToGoogleCalendar } = require("../core/calendar");
 const scheduledEvents = new Map();
 let state = {};
 class NotionUtils {
-  constructor(notion, calendar, email) {
+  constructor(notion, auth, calendar, email, token, google_calendar_id) {
     this.notion = notion;
+    this.auth = auth;
     this.notion_database_id = calendar.id;
+    this.google_calendar_id = google_calendar_id;
     this.lastChecked = new Date().toISOString();
     this.eventsList = new Map(
       calendar.events.map((event) => [event.id, event])
     );
     this.calendar = calendar;
     this.email = email;
+    this.token = token;
   }
 
   async fetchEvents() {
@@ -64,7 +67,7 @@ class NotionUtils {
     return newEvents;
   }
 
-  async getNotionEvents() {
+  async notionEventsHandler() {
     try {
       const events = await this.fetchEvents();
       const lastCheckedTruncated = Event.truncateToMinutes(
@@ -79,7 +82,7 @@ class NotionUtils {
               state: "success",
               user: this.email,
               message: `Event ${event.id} found in scheduledEvents`,
-              action: "reset",
+              action: "reset no_update_counter",
             };
             console.log(state);
             scheduledEvents.set(event.id, {
@@ -91,7 +94,7 @@ class NotionUtils {
               state: "success",
               user: this.email,
               message: `Event ${event.id} found in eventsList`,
-              action: "update",
+              action: "add to scheduledEvents",
             };
             console.log(state);
             scheduledEvents.set(event.id, {
@@ -133,24 +136,36 @@ class NotionUtils {
           }
         });
 
-        scheduledEvents.forEach((value, key) => {
+        scheduledEvents.forEach(async (value, key) => {
           if (value.no_update_counter === 1) {
-            state = {
-              state: "success",
-              user: this.email,
-              message: `Event ${key} has no updates for 1 cycle`,
-              action: "publish and remove from scheduledEvents",
-            };
-            console.log(state);
-            value.event.published_time = new Date().toISOString();
-            if (value.update === true) {
-              // update the event in the database
-              value.event.state = "PUBLISHING";
-              state = updateEventInCalendar(value.event);
+            if (new Date(value.event.start)) {
+              state = {
+                state: "success",
+                user: this.email,
+                message: `Event ${key} has no updates for 1 cycle`,
+                action: "publish and remove from scheduledEvents",
+              };
               console.log(state);
+              value.event.published_time = new Date().toISOString();
+              if (value.update === true) {
+                // update the event in the database
+                value.event.state = "PUBLISHING";
+                state = updateEventInCalendar(value.event);
+              } else {
+                const calendar_event_id = addEventToGoogleCalendar(
+                  this.token,
+                  this.calendar,
+                  value.event,
+                  this.google_calendar_id
+                );
+              }
             } else {
-              value.event.state = "PUBLISHING";
-              state = addEventToCalendar(this.calendar, value.event);
+              state = {
+                state: "error",
+                user: this.email,
+                message: `Event ${key} has no valid date`,
+                action: "remove from scheduledEvents",
+              };
               console.log(state);
             }
             scheduledEvents.delete(key);
@@ -161,7 +176,7 @@ class NotionUtils {
         state: "success",
         user: this.email,
         message: "Scheduled events",
-        scheduledEvents: newEvents.map((event) => event.title)
+        scheduledEvents: newEvents.map((event) => event.title),
       };
       console.log(state);
 

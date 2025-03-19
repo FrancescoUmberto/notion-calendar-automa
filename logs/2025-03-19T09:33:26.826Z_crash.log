@@ -1,0 +1,4 @@
+Timestamp: 2025-03-19T09:33:26.826Z
+Error: querySrv ESERVFAIL _mongodb._tcp.calendar-events.ejzrt.mongodb.net
+Stack: Error: querySrv ESERVFAIL _mongodb._tcp.calendar-events.ejzrt.mongodb.net
+    at QueryReqWrap.onresolve [as oncomplete] (node:internal/dns/promises:293:17)

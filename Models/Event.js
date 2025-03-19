@@ -36,7 +36,6 @@ class Event {
     this.published_time = published_time;
   }
   static fromNotionPage(notion_database_id, page) {
-    
     if (
       page.properties.Date?.date?.start &&
       !page.properties.Date?.date?.start.includes("T") &&
@@ -45,7 +44,7 @@ class Event {
       page.properties.Date.date.start += "T00:00:00.000Z";
     }
     // console.log(new Date(page.last_edited_time));
-    return new Event(
+    const newEvent = new Event(
       page.id,
       notion_database_id,
       null,
@@ -59,6 +58,7 @@ class Event {
       new Date(page.last_edited_time),
       null
     );
+    return newEvent;
   }
 
   static truncateToMinutes(date) {

@@ -40,7 +40,6 @@ class NotionUtils {
           state: "success",
           message: "Events fetched successfully",
         };
-        // console.log(state);
         return Event.fromNotionPage(this.notion_database_id, page);
       });
       return events;

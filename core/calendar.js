@@ -51,11 +51,11 @@ async function addEventToGoogleCalendar(token, calendar_db, eventData, google_ca
         calendarId: google_calendar_id,
         resource: event,
       });
-      console.log("✅ Event added to Google Calendar:", calendar_event_id.data.id);
+      console.log({state: "success", message: `Event ${calendar_event_id.data.id} added to Google Calendar`});
 
       eventData.state = "PUBLISHED";
       eventData.calendar_event_id = calendar_event_id.data.id;
-
+      eventData.google_calendar_id = google_calendar_id;
       state = addEventToCalendar(calendar_db, eventData);
 
       return calendar_event_id.data.id;

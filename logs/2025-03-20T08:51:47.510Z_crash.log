@@ -1,0 +1,5 @@
+Timestamp: 2025-03-20T08:51:47.510Z
+Error: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/
+Stack: MongooseServerSelectionError: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/
+    at _handleConnectionErrors (/Users/umbertofrancescocarolini/Desktop/Programmazione/notion-calendar-automa_v2/node_modules/mongoose/lib/connection.js:1165:11)
+    at NativeConnection.openUri (/Users/umbertofrancescocarolini/Desktop/Programmazione/notion-calendar-automa_v2/node_modules/mongoose/lib/connection.js:1096:11)

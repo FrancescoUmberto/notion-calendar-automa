@@ -72,6 +72,17 @@ class Event {
       event.state = EventState.INCOMPLETE;
     }
   }
+
+  static applyChanges(event, changes) {
+    for (const [key, value] of Object.entries(changes)) {
+      // Only update if the new value is not null and different from the existing one
+      if (value !== null && value !== undefined && event[key] !== value) {
+        event[key] = value;
+      }
+    }
+    Event.checkEventCompleteness(event);
+    return event;
+  }
 }
 const EventState = Object.freeze({
   PENDING: "PENDING",
@@ -101,6 +112,7 @@ const eventSchema = new mongoose.Schema({
   title: { type: String, required: true },
   start: { type: Date, required: false },
   end: { type: Date, required: false },
+  color: { type: Number, required: true },
   last_edited_time: { type: Date, required: true },
   published_time: { type: Date, required: false },
 });

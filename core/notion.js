@@ -1,10 +1,7 @@
 require("dotenv").config();
 const Event = require("../Models/Event").Event;
-const {
-  addEventToCalendar,
-  updateEventInCalendar,
-} = require("../Database/calendar.db");
-const { addEventToGoogleCalendar } = require("../core/calendar");
+const { updateEventInCalendar } = require("../Database/calendar.db");
+const { addEvent, updateEvent } = require("../core/calendar");
 const scheduledEvents = new Map();
 let state = {};
 class NotionUtils {
@@ -96,8 +93,20 @@ class NotionUtils {
               action: "add to scheduledEvents",
             };
             console.log(state);
+            // scheduledEvents.set(event.id, {
+            //   event: event,
+            //   calendar: this.calendar.id,
+            //   no_update_counter: 0,
+            //   update: true,
+            // });
+            let existingEvent = this.eventsList.get(event.id);
+
+            // Apply changes (only update changed values)
+            let updatedEvent = Event.applyChanges(existingEvent, event);
+            console.log(updatedEvent);  
+            // Store the updated event in scheduledEvents
             scheduledEvents.set(event.id, {
-              event: event,
+              event: updatedEvent,
               calendar: this.calendar.id,
               no_update_counter: 0,
               update: true,
@@ -149,9 +158,14 @@ class NotionUtils {
               if (value.update === true) {
                 // update the event in the database
                 value.event.state = "PUBLISHING";
-                state = updateEventInCalendar(value.event);
+                state = updateEvent(
+                  this.token,
+                  this.calendar,
+                  value.event,
+                  this.google_calendar_id
+                );
               } else {
-                const calendar_event_id = addEventToGoogleCalendar(
+                addEvent(
                   this.token,
                   this.calendar,
                   value.event,

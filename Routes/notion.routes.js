@@ -115,7 +115,12 @@ router.get("/events", async (req, res) => {
 
     const calendar = new Calendar();
     const calendarData = await calendar.getCalendar(user.calendarId);
-    const notionUtils = new NotionUtils(calendarData);
+    const notionUtils = new NotionUtils(
+      calendarData,
+      user.email,
+      user.token,
+      user.google_calendar
+    );
     const events = await notionUtils.fetchEvents();
     res.send(events);
   } catch (error) {

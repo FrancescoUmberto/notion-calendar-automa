@@ -2,6 +2,7 @@ require("dotenv").config();
 const router = require("express").Router();
 const getUserByEmail = require("../Database/user.db").getUserByEmail;
 const addCalendar = require("../Database/calendar.db").addCalendar;
+const { Client } = require("@notionhq/client");
 const Auth = require("../core/auth");
 const NotionUtils = require("../core/notion");
 const Calendar = require("../Models/Calendar").Calendar;
@@ -114,15 +115,8 @@ router.get("/events", async (req, res) => {
     if (!user) return res.status(404).send("User not found");
 
     const calendar = new Calendar();
-    const calendarData = await calendar.getCalendar(user.calendarId);
-    const notionUtils = new NotionUtils(
-      calendarData,
-      user.email,
-      user.token,
-      user.google_calendar
-    );
-    const events = await notionUtils.fetchEvents();
-    res.send(events);
+    const userCalendar = await calendar.getCalendar(user.calendar);
+    res.send(userCalendar);
   } catch (error) {
     console.error(error);
     res.status(500).send("Internal Server Error");

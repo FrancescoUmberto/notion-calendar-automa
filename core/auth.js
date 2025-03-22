@@ -1,7 +1,6 @@
-const fs = require("fs");
 const { google } = require("googleapis");
-const readline = require("readline");
-class auth {
+
+class Auth {
   constructor(GOOGLE_CLIENT_ID, GOOGLE_SECRET_ID, REDIRECT_URI) {
     // Google API configuration
     this.SCOPES = [
@@ -15,25 +14,58 @@ class auth {
     );
   }
 
-  // Function to authenticate with Google Calendar API
-  authorizeGoogleAPI(token) {
-    return new Promise((resolve, reject) => {
-      this.oauth2Client.setCredentials(JSON.parse(token));
-      resolve(this.oauth2Client);
-    });
-  }
-  // Function to get the access token from the authorization code
+  // Function to generate Google authentication URL
   getAuthURL() {
-    const authUrl = this.oauth2Client.generateAuthUrl({
+    return this.oauth2Client.generateAuthUrl({
       access_type: "offline",
       scope: this.SCOPES,
+      prompt: "consent", // Ensures a refresh token is always provided
     });
-    console.log(
-      "📅 Google authentication required, open the following URL and enter the code: ",
-      authUrl
-    );
-    return authUrl;
+  }
+
+  // Function to exchange authorization code for tokens and user email
+  async getTokenFromCode(code) {
+    try {
+      const { tokens } = await this.oauth2Client.getToken(code);
+      this.oauth2Client.setCredentials(tokens);
+
+      // Get user email from Google API
+      const oauth2 = google.oauth2({ version: "v2", auth: this.oauth2Client });
+      const { data } = await oauth2.userinfo.get();
+      const email = data.email;
+
+      if (!email) throw new Error("Could not retrieve user email");
+
+      return { tokens, email };
+    } catch (error) {
+      console.error("Error exchanging code for tokens:", error);
+      throw error;
+    }
+  }
+
+  // Function to authenticate with stored tokens
+  async authenticateWithToken(tokenData) {
+    try {
+      const tokens = JSON.parse(tokenData);
+      this.oauth2Client.setCredentials(tokens);
+
+      // Refresh token if needed
+      if (new Date().getTime() >= tokens.expiry_date) {
+        const { credentials } = await this.oauth2Client.refreshAccessToken();
+        return credentials;
+      }
+
+      return tokens;
+    } catch (error) {
+      console.error("Error authenticating with token:", error);
+      throw error;
+    }
+  }
+
+  // Get OAuth2 client instance
+  getOAuthClient() {
+    return this.oauth2Client;
   }
 }
 
-module.exports = auth;
+module.exports = Auth;

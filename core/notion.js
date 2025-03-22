@@ -5,9 +5,8 @@ const { addEvent, updateEvent } = require("../core/calendar");
 const scheduledEvents = new Map();
 let state = {};
 class NotionUtils {
-  constructor(notion, auth, calendar, email, token, google_calendar_id) {
+  constructor(notion, calendar, email, token, google_calendar_id) {
     this.notion = notion;
-    this.auth = auth;
     this.notion_database_id = calendar.id;
     this.google_calendar_id = google_calendar_id;
     this.lastChecked = new Date().toISOString();

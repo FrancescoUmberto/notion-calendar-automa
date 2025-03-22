@@ -1,6 +1,6 @@
 require("dotenv").config();
 const express = require("express");
-const Auth = require("./core/auth");
+// const Auth = require("./core/auth");
 const { Client } = require("@notionhq/client");
 const User = require("./Models/User").userModel;
 const NotionUtils = require("./core/notion");
@@ -10,7 +10,7 @@ const { addEventToGoogleCalendar } = require("./core/calendar");
 const authRouter = require("./Routes/auth.routes");
 const notionRouter = require("./Routes/notion.routes");
 
-var auth = new Auth(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_SECRET_ID, process.env.REDIRECT_URI);
+// var auth = new Auth(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_SECRET_ID, process.env.REDIRECT_URI);
 const app = express();
 // use the endpoint defined in the core/calendar.endpoints.js file
 app.use(express.json());
@@ -50,7 +50,7 @@ connectToDatabase(() => {
       for (const user of users) {
         try {
           const calendarData = await calendar.getCalendar(user.calendar);
-          const notionUtils = new NotionUtils(notion, auth, calendarData, user.email, user.token, user.google_calendar);
+          const notionUtils = new NotionUtils(notion, calendarData, user.email, user.token, user.google_calendar);
           await notionUtils.notionEventsHandler();
           users = await User.find({ scan: true });
           if (!users.find((u) => u.email === user.email)) {

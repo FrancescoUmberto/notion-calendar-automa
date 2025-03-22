@@ -90,7 +90,7 @@ async function updateEvent(token, calendar_db, eventData, google_calendar_id) {
     // Create updated event object
     const event = {
       summary: eventData.title,
-      start: eventData.end
+      start: eventData.start
         ? { dateTime: eventData.start, timeZone: "UTC" }
         : { date: eventData.start.split("T")[0], timeZone: "UTC" },
       end: eventData.end

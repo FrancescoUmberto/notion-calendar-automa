@@ -1,0 +1,6 @@
+Timestamp: 2025-03-22T14:55:01.295Z
+Error: http is not defined
+Stack: ReferenceError: http is not defined
+    at /home/umberto/Desktop/notion-calendar-automa/index.js:30:3
+    at /home/umberto/Desktop/notion-calendar-automa/Database/database.js:11:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)

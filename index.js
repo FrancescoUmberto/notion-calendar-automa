@@ -1,7 +1,9 @@
 require("dotenv").config();
 const express = require("express");
+const https = require("https");
 // const Auth = require("./core/auth");
 const { Client } = require("@notionhq/client");
+const fs = require("fs");
 const User = require("./Models/User").userModel;
 const NotionUtils = require("./core/notion");
 const Calendar = require("./Models/Calendar").Calendar;
@@ -9,9 +11,15 @@ const { connectToDatabase } = require("./Database/database");
 const { addEventToGoogleCalendar } = require("./core/calendar");
 const authRouter = require("./Routes/auth.routes");
 const notionRouter = require("./Routes/notion.routes");
+const cors = require("cors");
 
 // var auth = new Auth(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_SECRET_ID, process.env.REDIRECT_URI);
 const app = express();
+app.use(cors({ origin: "https://notion-calendar-automa.it" }));
+const options = {
+  key: fs.readFileSync("/etc/letsencrypt/live/notion-calendar-automa.it/privkey.pem"),
+  cert: fs.readFileSync("/etc/letsencrypt/live/notion-calendar-automa.it/fullchain.pem"),
+}
 // use the endpoint defined in the core/calendar.endpoints.js file
 app.use(express.json());
 app.use("/", authRouter);
@@ -21,7 +29,7 @@ const activeScans = new Map();
 var state = {};
 
 connectToDatabase(() => {
-  app.listen(process.env.PORT, async () => {
+  https.createServer(options, app).listen(process.env.PORT, async () => {
     state = {
       server: "running",
       url: `http://${process.env.HOST}:${process.env.PORT}`,

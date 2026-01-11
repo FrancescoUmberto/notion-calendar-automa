@@ -1,3 +1,5 @@
 .env
 /venv
 DS_STORE
+credentials.json
+__pycache__/
